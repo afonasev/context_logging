@@ -1,7 +1,7 @@
 # context_logging
 
 [![pypi](https://badge.fury.io/py/context_logging.svg)](https://pypi.org/project/context_logging)
-[![Python: 3.6+](https://img.shields.io/badge/Python-3.6+-blue.svg)](https://pypi.org/project/context_logging)
+[![Python: 3.7+](https://img.shields.io/badge/Python-3.6+-blue.svg)](https://pypi.org/project/context_logging)
 [![Downloads](https://img.shields.io/pypi/dm/context_logging.svg)](https://pypistats.org/packages/context_logging)
 [![Build Status](https://travis-ci.org/Afonasev/context_logging.svg?branch=master)](https://travis-ci.org/Afonasev/context_logging)
 [![Code coverage](https://codecov.io/gh/Afonasev/context_logging/branch/master/graph/badge.svg)](https://codecov.io/gh/Afonasev/context_logging)
@@ -21,7 +21,7 @@ Tool for easy logging with current context information
 ### Setup log record factory
 
 ```python
-from context_logging import Context, context_info, setup_log_record
+from context_logging import Context, current_context, root_context, setup_log_record
 
 setup_log_record()
 ```
@@ -30,23 +30,23 @@ setup_log_record()
 
 ```python
 with Context(val=1):
-    assert context_info()['val'] == 1
+    assert current_context['val'] == 1
 
-assert 'val' not in context_info()
+assert 'val' not in current_context
 ```
 
 ### Any nesting of contexts is allowed
 
 ```python
 with Context(val=1):
-    assert context_info() == {'val': 1}
+    assert current_context == {'val': 1}
 
     with Context(val=2, var=2):
-        assert context_info() == {'val': 2, 'var': 2}
+        assert current_context == {'val': 2, 'var': 2}
 
-    assert context_info() == {'val': 1}
+    assert current_context == {'val': 1}
 
-assert 'val' not in context_info()
+assert 'val' not in current_context
 ```
 
 ### As decorator
@@ -54,35 +54,34 @@ assert 'val' not in context_info()
 ```python
 @Context(val=1)
 def f():
-    assert context_info()['val'] == 1
+    assert current_context['val'] == 1
 
 f()
-assert 'val' not in context_info()
+assert 'val' not in current_context
 ```
 
 ### With start/finish
 
 ```python
 ctx = Context(val=1)
-assert 'val' not in context_info()
+assert 'val' not in current_context
 
 ctx.start()
-assert context_info()['val'] == 1
+assert current_context['val'] == 1
 
 ctx.finish()
-assert 'val' not in context_info()
+assert 'val' not in current_context
 ```
 
-### Write/delete to context_info
-
+### Write/delete to current_context
 ```python
 with Context():
-    assert 'val' not in context_info()
-    context_info()['val'] = 1
-    assert context_info()['val'] == 1
+    assert 'val' not in current_context
+    current_context['val'] = 1
+    assert current_context['val'] == 1
 ```
 
-### Explicit context name
+### Explicit context name (else will be used path to the python module)
 
 ```python
 with Context(name='my_context'):
@@ -98,7 +97,7 @@ with Context(name='my_context'):
 # INFO 'my_context: executed in 00:00:01',
 ```
 
-### Exceptions from context are populated with context_info (disable with `fill_exception_context=False`)
+### Exceptions from context are populated with current_contextdisable with `fill_exception_context=False`)
 
 ```python
 try:
@@ -111,9 +110,7 @@ except Exception as exc:
 ### We can set data to root context that never will be closed
 
 ```python
-from context_logging import root_context
-
-root_context()['env'] = 'test'
+root_context['env'] = 'test'
 ```
 
 ### For autofilling thread context in async code

@@ -1,10 +1,11 @@
 import logging
 import time
+from collections import UserDict
 from contextlib import ContextDecorator
 from contextvars import ContextVar
 from datetime import timedelta
 from inspect import getframeinfo, stack
-from typing import Any, ChainMap, List, Optional, Type, cast
+from typing import Any, Callable, ChainMap, Dict, List, Optional, Type, cast
 
 ROOT = 'root'
 logger = logging.getLogger(__package__)
@@ -37,12 +38,12 @@ class Context(ContextDecorator):
         if self._log_execution_time:
             logger.info(
                 '%s: executed in %s',
-                current_context().name,
+                self.name,
                 _seconds_to_time(self.finish_time),
             )
 
         if exc and self._fill_exception_context:
-            exc.args += (context_info(),)
+            exc.args += (dict(current_context),)
 
         ctx_stack.get().remove(self)
 
@@ -64,17 +65,28 @@ ctx_stack: ContextVar[List[Context]] = ContextVar(
 )
 
 
-def root_context() -> Context:
-    return ctx_stack.get()[0]
+class ContextProxy(UserDict):  # type: ignore
+    def __init__(  # pylint:disable=super-init-not-called
+        self, get_info: Callable[[], Dict[str, Any]]
+    ) -> None:
+        self._get_info = get_info
+
+    @property
+    def data(self) -> Dict[str, Any]:  # type: ignore
+        return self._get_info()
 
 
-def current_context() -> Context:
-    return ctx_stack.get()[-1]
+def _root_context() -> Dict[str, Any]:
+    return ctx_stack.get()[0].info
 
 
-def context_info() -> ChainMap[str, Any]:
+def _current_context() -> ChainMap[str, Any]:
     _stack = ctx_stack.get()
     return ChainMap(*(c.info for c in _stack[::-1]))
+
+
+current_context = ContextProxy(_current_context)  # type: ignore
+root_context = ContextProxy(_root_context)
 
 
 def _default_name() -> str:

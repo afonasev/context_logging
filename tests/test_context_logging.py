@@ -2,9 +2,7 @@ import logging
 from unittest.mock import ANY
 
 from context_logging.context import (
-    ROOT,
     Context,
-    context_info,
     current_context,
     logger,
     root_context,
@@ -13,70 +11,61 @@ from context_logging.setup_log_record import setup_log_record
 
 
 def test_root_context():
-    assert root_context().name == ROOT
+    assert root_context == {}
+    current_context['val'] = 1
+    assert root_context == {'val': 1}
+    root_context.clear()
 
 
 def test_current_context():
-    assert current_context() is root_context()
-
-    outer_context = Context()
-    with outer_context:
-        assert current_context() is outer_context
-
-        inner_context = Context()
-        with inner_context:
-            assert current_context() is inner_context
-
-
-def test_context_info():
-    assert context_info() == {}
+    assert current_context == {}
 
     with Context(data='outer', outer=''):
-        assert context_info() == {'data': 'outer', 'outer': ''}
+        assert current_context == {'data': 'outer', 'outer': ''}
 
         with Context(data='inner', inner=''):
-            assert context_info() == {
+            assert current_context == {
                 'data': 'inner',
                 'outer': '',
                 'inner': '',
             }
 
-        assert context_info() == {'data': 'outer', 'outer': ''}
+        assert current_context == {'data': 'outer', 'outer': ''}
 
-    assert context_info() == {}
+    assert current_context == {}
 
 
 def test_writing_to_context_info():
-    assert context_info() == {}
+    assert current_context == {}
 
     with Context():
-        assert context_info() == {}
+        assert current_context == {}
 
-        context_info()['test'] = 'test'
-        assert context_info() == {'test': 'test'}
+        current_context['test'] = 'test'
+        assert current_context == {'test': 'test'}
 
-    assert context_info() == {}
+    assert current_context == {}
 
 
 def test_context_as_decorator():
     @Context(data='data')
     def wrapped():
-        assert context_info() == {'data': 'data'}
+        assert current_context == {'data': 'data'}
 
-    assert context_info() == {}
+    assert current_context == {}
     wrapped()
-    assert context_info() == {}
+    assert current_context == {}
 
 
 def test_context_with_start_finish():
     ctx = Context(data='data')
-    assert context_info() == {}
+    assert current_context == {}
 
     ctx.start()
-    assert context_info() == {'data': 'data'}
+    assert current_context == {'data': 'data'}
 
     ctx.finish()
-    assert context_info() == {}
+    assert current_context == {}
 
 
 def test_default_name():
