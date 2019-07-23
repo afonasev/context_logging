@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "context_logging"
-version = "0.0.0"
+version = "0.1.0"
 description = "Tool for easy logging with current context information"
 authors = ["Evgeniy Afonasev <ea.afonasev@gmail.com>"]
 license = "MIT"

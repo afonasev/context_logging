@@ -1,7 +1,7 @@
 # context_logging
 
 [![pypi](https://badge.fury.io/py/context_logging.svg)](https://pypi.org/project/context_logging)
-[![Python: 3.7+](https://img.shields.io/badge/Python-3.6+-blue.svg)](https://pypi.org/project/context_logging)
+[![Python: 3.7+](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://pypi.org/project/context_logging)
 [![Downloads](https://img.shields.io/pypi/dm/context_logging.svg)](https://pypistats.org/packages/context_logging)
 [![Build Status](https://travis-ci.org/Afonasev/context_logging.svg?branch=master)](https://travis-ci.org/Afonasev/context_logging)
 [![Code coverage](https://codecov.io/gh/Afonasev/context_logging/branch/master/graph/badge.svg)](https://codecov.io/gh/Afonasev/context_logging)
@@ -148,6 +148,11 @@ MIT
 ## Change Log
 
 Unreleased
+-----
+
+* ...
+
+0.1.0 - 2019-07-23
 -----
 
 * initial
