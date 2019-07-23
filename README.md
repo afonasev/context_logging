@@ -18,7 +18,111 @@ Tool for easy logging with current context information
 
 ## Usage
 
-...
+### Setup log record factory
+
+```python
+from context_logging import Context, context_info, setup_log_record
+
+setup_log_record()
+```
+
+### As contextmanager
+
+```python
+with Context(val=1):
+    assert context_info()['val'] == 1
+
+assert 'val' not in context_info()
+```
+
+### Any nesting of contexts is allowed
+
+```python
+with Context(val=1):
+    assert context_info() == {'val': 1}
+
+    with Context(val=2, var=2):
+        assert context_info() == {'val': 2, 'var': 2}
+
+    assert context_info() == {'val': 1}
+
+assert 'val' not in context_info()
+```
+
+### As decorator
+
+```python
+@Context(val=1)
+def f():
+    assert context_info()['val'] == 1
+
+f()
+assert 'val' not in context_info()
+```
+
+### With start/finish
+
+```python
+ctx = Context(val=1)
+assert 'val' not in context_info()
+
+ctx.start()
+assert context_info()['val'] == 1
+
+ctx.finish()
+assert 'val' not in context_info()
+```
+
+### Write/delete to context_info
+
+```python
+with Context():
+    assert 'val' not in context_info()
+    context_info()['val'] = 1
+    assert context_info()['val'] == 1
+```
+
+### Explicit context name
+
+```python
+with Context(name='my_context'):
+    pass
+```
+
+### Execution time logged on exit from context (disable with `log_execution_time=False`)
+
+```python
+with Context(name='my_context'):
+    time.sleep(1)
+
+# INFO 'my_context: executed in 00:00:01',
+```
+
+### Exceptions from context are populated with context_info (disable with `fill_exception_context=False`)
+
+```python
+try:
+    with Context(val=1):
+        raise Exception(1)
+except Exception as exc:
+    assert exc.args = (1, {'val': 1})
+```
+
+### We can set data to root context that never will be closed
+
+```python
+from context_logging import root_context
+
+root_context()['env'] = 'test'
+```
+
+### For autofilling thread context in async code
+
+```python
+from contextvars_executor import ContextVarExecutor
+
+loop.set_default_executor(ContextVarExecutor())
+```
 
 ## For developers
 
