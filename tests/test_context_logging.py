@@ -92,6 +92,15 @@ def test_fill_exception_context():
         assert exc.args == ('error', {'data': 1})
 
 
+def test_fill_exception_last_context():
+    try:
+        with Context(data=1):
+            with Context(data=2):
+                raise Exception('error')
+    except Exception as exc:
+        assert exc.args == ('error', {'data': 2})
+
+
 def test_log_record(caplog):
     setup_log_record()
 

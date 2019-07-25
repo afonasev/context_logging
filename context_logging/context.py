@@ -44,7 +44,9 @@ class Context(ContextDecorator):
             )
 
         if exc and self._fill_exception_context and current_context:
-            exc.args += (dict(current_context),)
+            if not getattr(exc, '__context_logging__', None):
+                exc.__context_logging__ = True  # type: ignore
+                exc.args += (dict(current_context),)
 
         ctx_stack.get().remove(self)
 
