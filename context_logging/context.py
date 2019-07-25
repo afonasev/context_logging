@@ -42,7 +42,7 @@ class Context(ContextDecorator):
                 _seconds_to_time(self.finish_time),
             )
 
-        if exc and self._fill_exception_context:
+        if exc and self._fill_exception_context and current_context:
             exc.args += (dict(current_context),)
 
         ctx_stack.get().remove(self)

@@ -18,17 +18,11 @@ Tool for easy logging with current context information
 
 ## Usage
 
-### Setup log record factory
-
-```python
-from context_logging import Context, current_context, root_context, setup_log_record
-
-setup_log_record()
-```
-
 ### As contextmanager
 
 ```python
+from context_logging import Context, current_context
+
 with Context(val=1):
     assert current_context['val'] == 1
 
@@ -88,6 +82,21 @@ with Context(name='my_context'):
     pass
 ```
 
+### Setup logging with context
+
+```python
+import logging
+from context_logging import current_context, setup_log_record
+
+logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s %(context)s', level=logging.INFO)
+setup_log_record()
+
+current_context['val'] = 1
+logging.info('message')
+
+# 2019-07-25 19:49:43,892 INFO root message {'val': 1}
+```
+
 ### Execution time logged on exit from context (disable with `log_execution_time=False`)
 
 ```python
@@ -110,6 +119,8 @@ except Exception as exc:
 ### We can set data to root context that never will be closed
 
 ```python
+from context_logging import root_context
+
 root_context['env'] = 'test'
 ```
 
@@ -150,7 +161,7 @@ MIT
 Unreleased
 -----
 
-* ...
+* context as attr of log record
 
 0.1.0 - 2019-07-23
 -----

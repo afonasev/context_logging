@@ -96,8 +96,8 @@ def test_log_record(caplog):
     setup_log_record()
 
     logging.info('test')
-    assert caplog.records[0].getMessage() == 'test'
+    assert caplog.records[-1].context == {}
 
     with Context(data=1):
         logging.info('test')
-        assert caplog.records[0].getMessage() == 'test (data=1)'
+        assert caplog.records[-1].context == {'data': 1}
