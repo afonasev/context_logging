@@ -9,6 +9,7 @@ from typing import Any, Callable, ChainMap, Dict, List, Optional, Type, cast
 
 ROOT = 'root'
 logger = logging.getLogger(__package__)
+logger.addHandler(logging.NullHandler())
 
 
 class Context(ContextDecorator):
