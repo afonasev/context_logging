@@ -161,7 +161,7 @@ MIT
 Unreleased
 -----
 
-* ...
+* no show empty context in log
 
 0.2.0 - 2019-07-25
 -----
