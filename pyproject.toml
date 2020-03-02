@@ -15,7 +15,7 @@ python = "^3.7"
 [tool.poetry.dev-dependencies]
 black = {version = "^19.3b0",allows-prereleases = true}
 bumpversion = "^0.5.3"
-flake8-awesome = "^1.0"
+flake8-awesome = "^1.2"
 mypy = "^0.660.0"
 pylint = "^2.2"
 pytest = "^5.3"
