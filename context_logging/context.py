@@ -1,15 +1,13 @@
-import logging
 import time
 from collections import UserDict
 from contextlib import ContextDecorator
 from contextvars import ContextVar
-from datetime import timedelta
-from inspect import getframeinfo, stack
 from typing import Any, Callable, ChainMap, Dict, List, Optional, Type, cast
 
+from .logger import logger
+from .utils import context_name_with_code_path, seconds_to_time_string
+
 ROOT = 'root'
-logger = logging.getLogger(__package__)
-logger.addHandler(logging.NullHandler())
 
 
 class Context(ContextDecorator):
@@ -21,7 +19,7 @@ class Context(ContextDecorator):
         fill_exception_context: bool = True,
         **kwargs: Any,
     ) -> None:
-        self.name = name or _default_name()
+        self.name = name or context_name_with_code_path()
         self.info = kwargs
         self._log_execution_time = log_execution_time
         self._fill_exception_context = fill_exception_context
@@ -40,7 +38,7 @@ class Context(ContextDecorator):
             logger.info(
                 '%s: executed in %s',
                 self.name,
-                _seconds_to_time(self.finish_time),
+                seconds_to_time_string(self.finish_time),
             )
 
         if exc and self._fill_exception_context and current_context:
@@ -89,20 +87,3 @@ def _current_context() -> ChainMap[str, Any]:
 
 current_context = ContextProxy(_current_context)  # type: ignore
 root_context = ContextProxy(_root_context)
-
-
-def _default_name() -> str:
-    """
-    >>> _default_name()
-    'Context /path_to_code/code.py:10'
-    """
-    caller = getframeinfo(stack()[2][0])
-    return f'Context {caller.filename}:{caller.lineno}'
-
-
-def _seconds_to_time(seconds: float) -> str:
-    """
-    >>> _seconds_to_time(seconds=10000)
-    '2:46:40'
-    """
-    return str(timedelta(seconds=seconds))

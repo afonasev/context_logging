@@ -9,10 +9,10 @@ from context_logging.context import (
     Context,
     ctx_stack,
     current_context,
-    logger,
     root_context,
 )
-from context_logging.setup_log_record import setup_log_record
+from context_logging.log_record import setup_log_record
+from context_logging.logger import logger
 
 
 def test_root_context():
