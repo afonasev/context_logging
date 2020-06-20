@@ -4,7 +4,7 @@ config:
   - "Makefile"
 
 enhancement:
-  - "flake8_if_expr/*"
+  - "context_logging/*"
 
 tests:
   - "tests/*"
