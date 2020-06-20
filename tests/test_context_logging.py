@@ -120,14 +120,14 @@ def test_log_record(caplog):
 @Context()
 def _func(n, errors):
     try:
-        time.sleep(random.randint(0, 1))
+        time.sleep(random.randint(0, 1))  # noqa:S311
         assert current_context['data'] == 'inner'
 
         current_context['data'] = n
         assert current_context['data'] == n
 
         for _ in range(3):
-            time.sleep(random.randint(0, 1))
+            time.sleep(random.randint(0, 1))  # noqa:S311
             assert current_context['data'] == n
 
     except Exception:
