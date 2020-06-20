@@ -4,6 +4,7 @@ from contextlib import ContextDecorator
 from contextvars import ContextVar
 from typing import Any, Callable, ChainMap, Dict, List, Optional, Type, cast
 
+from .config import config
 from .logger import logger
 from .utils import context_name_with_code_path, seconds_to_time_string
 
@@ -13,15 +14,21 @@ ROOT = 'root'
 class Context(ContextDecorator):
     def __init__(
         self,
-        *,
         name: Optional[str] = None,
-        log_execution_time: bool = True,
-        fill_exception_context: bool = True,
-        **kwargs: Any,
+        *,
+        log_execution_time: Optional[bool] = None,
+        fill_exception_context: Optional[bool] = None,
+        **kwargs: Any
     ) -> None:
         self.name = name or context_name_with_code_path()
         self.info = kwargs
+
+        if log_execution_time is None:
+            log_execution_time = config.LOG_EXECUTION_TIME_DEFAULT
         self._log_execution_time = log_execution_time
+
+        if fill_exception_context is None:
+            fill_exception_context = config.FILL_EXEPTIONS_DEFAULT
         self._fill_exception_context = fill_exception_context
 
         self.start_time: Optional[float] = None

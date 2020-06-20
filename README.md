@@ -97,7 +97,7 @@ logging.info('message')
 # 2019-07-25 19:49:43,892 INFO root message {'val': 1}
 ```
 
-### Execution time logged on exit from context (disable with `log_execution_time=False`)
+### Execution time logged on exit from context (it can be disabled with `log_execution_time=False` argument)
 
 ```python
 with Context(name='my_context'):
@@ -106,7 +106,11 @@ with Context(name='my_context'):
 # INFO 'my_context: executed in 00:00:01',
 ```
 
-### Exceptions from context are populated with current_contextdisable with `fill_exception_context=False`)
+Default value for log_execution_time param can be changed with env
+
+    export CONTEXT_LOGGING_LOG_EXECUTION_TIME_DEFAULT=0
+
+### Exceptions from context are populated with current_context (it can be disabled with `fill_exception_context=False` argument)
 
 ```python
 try:
@@ -115,6 +119,10 @@ try:
 except Exception as exc:
     assert exc.args = (1, {'val': 1})
 ```
+
+Default value for fill_exception_context param can be changed with env
+
+    export CONTEXT_LOGGING_FILL_EXEPTIONS_DEFAULT=0
 
 ### We can set data to root context that never will be closed
 
