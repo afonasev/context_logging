@@ -58,9 +58,8 @@ class Context(ContextDecorator):
         exc_type: Optional[Type[Exception]],
         exc_value: Optional[Exception],
         traceback: Any,
-    ) -> bool:
+    ) -> None:
         self.finish(exc_value)
-        return False
 
 
 ctx_stack: ContextVar[List[Context]] = ContextVar(
