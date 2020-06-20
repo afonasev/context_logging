@@ -1,8 +1,13 @@
 import logging
+import random
+import time
+from threading import Thread
+from typing import List
 from unittest.mock import ANY
 
 from context_logging.context import (
     Context,
+    ctx_stack,
     current_context,
     logger,
     root_context,
@@ -89,7 +94,7 @@ def test_fill_exception_context():
         with Context(data=1):
             raise Exception('error')
     except Exception as exc:
-        assert exc.args == ('error', {'data': 1})
+        assert exc.args == ('error', {'data': 1})  # noqa:PT017
 
 
 def test_fill_exception_last_context():
@@ -98,7 +103,7 @@ def test_fill_exception_last_context():
             with Context(data=2):
                 raise Exception('error')
     except Exception as exc:
-        assert exc.args == ('error', {'data': 2})
+        assert exc.args == ('error', {'data': 2})  # noqa:PT017
 
 
 def test_log_record(caplog):
@@ -110,3 +115,40 @@ def test_log_record(caplog):
     with Context(data=1):
         logging.info('test')
         assert caplog.records[-1].context == {'data': 1}
+
+
+@Context()
+def _func(n, errors):
+    try:
+        time.sleep(random.randint(0, 1))
+        assert current_context['data'] == 'inner'
+
+        current_context['data'] = n
+        assert current_context['data'] == n
+
+        for _ in range(3):
+            time.sleep(random.randint(0, 1))
+            assert current_context['data'] == n
+
+    except Exception:
+        logging.exception('Error')
+        for ctx in ctx_stack.get():
+            logging.info('Thread %s, context %s', n, ctx.info)
+        errors.append(1)
+
+
+def test_multithreading_context():
+    errors: List[int] = []
+
+    with Context(data='root'):
+        with Context(data='inner'):
+            threads = []
+            for i in range(1):
+                t = Thread(target=lambda i=i: _func(i, errors), daemon=True)
+                threads.append(t)
+                t.start()
+
+            for t in threads:
+                t.join()
+
+    assert not errors

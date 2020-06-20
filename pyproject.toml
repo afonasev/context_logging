@@ -7,23 +7,25 @@ license = "MIT"
 readme = 'README.md'
 repository = "https://github.com/Afonasev/context_logging"
 homepage = "https://pypi.org/project/context_logging"
-keywords = []
+keywords = ["logging", "context"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
 
 [tool.poetry.dev-dependencies]
-black = {version = "^19.3b0",allows-prereleases = true}
-bumpversion = "^0.6.0"
-flake8-awesome = "^1.2"
-mypy = "^0.660.0"
-pylint = "^2.2"
-pytest = "^5.4"
-pytest-cov = "^2.9"
-pytest-deadfixtures = "^2.2"
-pytest-mock = "^3.1"
-unify = "^0.5"
+black = {version = "^19.10b0", allow-prereleases = true}
+bumpversion = "^0.5"
+codecov = "^2.1.7"
+flake8-awesome = "^1"
+mypy = "*"
+pylint = "^2"
+pytest = "^5"
+pytest-cov = "^2"
+pytest-deadfixtures = "^2"
+pytest-mock = "^2"
+typed-ast = "^1"
+unify = "0.5"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.0"]
 build-backend = "poetry.masonry.api"
