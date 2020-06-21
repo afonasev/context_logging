@@ -1,6 +1,6 @@
 # context_logging
 
-[![pypi](https://badge.fury.io/py/context_logging.svg)](https://pypi.org/project/context_logging)
+[![pypi](https://badge.fury.io/py/context-logging.svg)](https://pypi.org/project/context_logging)
 [![Python: 3.7+](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://pypi.org/project/context_logging)
 [![Downloads](https://img.shields.io/pypi/dm/context_logging.svg)](https://pypistats.org/packages/context_logging)
 ![CI Status](https://github.com/afonasev/context_logging/workflows/ci/badge.svg?branch=master)
