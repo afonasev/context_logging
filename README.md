@@ -10,7 +10,24 @@
 
 ## Description
 
-Tool for easy logging with current context information
+Tool for easy logging with current context information.
+
+```python
+from context_logging import current_context
+
+logging.info('before context')
+# 2019-07-25 19:49:43 INFO before context
+
+with Context('my_context'):
+    current_context['var'] = 1
+    logging.info('in context')
+    # 2019-07-25 19:49:43 INFO in context {'var': 1}
+
+# 2019-07-25 19:49:43 INFO 'my_context: executed in 00:00:01 {'var': 1}'
+
+logging.info('after context')
+# 2019-07-25 19:49:43 INFO after context
+```
 
 ## Installation
 
@@ -18,89 +35,92 @@ Tool for easy logging with current context information
 
 ## Usage
 
-### As contextmanager
-
-```python
-from context_logging import Context, current_context
-
-with Context(val=1):
-    assert current_context['val'] == 1
-
-assert 'val' not in current_context
-```
-
-### Any nesting of contexts is allowed
-
-```python
-with Context(val=1):
-    assert current_context == {'val': 1}
-
-    with Context(val=2, var=2):
-        assert current_context == {'val': 2, 'var': 2}
-
-    assert current_context == {'val': 1}
-
-assert 'val' not in current_context
-```
-
-### As decorator
-
-```python
-@Context(val=1)
-def f():
-    assert current_context['val'] == 1
-
-f()
-assert 'val' not in current_context
-```
-
-### With start/finish
-
-```python
-ctx = Context(val=1)
-assert 'val' not in current_context
-
-ctx.start()
-assert current_context['val'] == 1
-
-ctx.finish()
-assert 'val' not in current_context
-```
-
-### Write/delete to current_context
-```python
-with Context():
-    assert 'val' not in current_context
-    current_context['val'] = 1
-    assert current_context['val'] == 1
-```
-
-### Explicit context name (else will be used path to the python module)
-
-```python
-with Context(name='my_context'):
-    pass
-```
-
 ### Setup logging with context
 
 ```python
 import logging
 from context_logging import current_context, setup_log_record
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s %(context)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s %(levelname)s %(name)s %(message)s %(context)s',
+    level=logging.INFO,
+)
 setup_log_record()
 
-current_context['val'] = 1
+current_context['var'] = 1
 logging.info('message')
 
-# 2019-07-25 19:49:43,892 INFO root message {'val': 1}
+# 2019-07-25 19:49:43,892 INFO root message {'var': 1}
+```
+
+### As contextmanager
+
+```python
+from context_logging import Context, current_context
+
+with Context(var=1):
+    assert current_context['var'] == 1
+
+assert 'var' not in current_context
+```
+
+### Any nesting of contexts is allowed
+
+```python
+with Context(var=1):
+    assert current_context == {'var': 1}
+
+    with Context(val=2, var=2):
+        assert current_context == {'val': 2, 'var': 2}
+
+    assert current_context == {'var': 1}
+
+assert 'var' not in current_context
+```
+
+### As decorator
+
+```python
+@Context(var=1)
+def f():
+    assert current_context['var'] == 1
+
+f()
+assert 'var' not in current_context
+```
+
+### With start/finish [DEPRECATED]
+
+```python
+ctx = Context(var=1)
+assert 'var' not in current_context
+
+ctx.start()
+assert current_context['var'] == 1
+
+ctx.finish()
+assert 'var' not in current_context
+```
+
+### Add/remove values from current_context
+```python
+with Context():
+    assert 'var' not in current_context
+    current_context['var'] = 1
+    assert current_context['var'] == 1
+```
+
+### Explicit context name (else will be used path to the python module)
+
+```python
+with Context('my_context'):
+    pass
 ```
 
 ### Execution time logged on exit from context (it can be disabled with `log_execution_time=False` argument)
 
 ```python
-with Context(name='my_context'):
+with Context('my_context'):
     time.sleep(1)
 
 # INFO 'my_context: executed in 00:00:01',
@@ -114,10 +134,10 @@ Default value for log_execution_time param can be changed with env
 
 ```python
 try:
-    with Context(val=1):
+    with Context(var=1):
         raise Exception(1)
 except Exception as exc:
-    assert exc.args = (1, {'val': 1})
+    assert exc.args = (1, {'var': 1})
 ```
 
 Default value for fill_exception_context param can be changed with env
@@ -132,12 +152,17 @@ from context_logging import root_context
 root_context['env'] = 'test'
 ```
 
-### For autofilling thread context in async code
+### If you want to pass context to other threads use [ContextVarExecutor](https://github.com/hellysmile/contextvars_executor)
 
 ```python
-from contextvars_executor import ContextVarExecutor
+from context_logging import ContextVarExecutor
 
-loop.set_default_executor(ContextVarExecutor())
+with ContextVarExecutor() as executor:
+    executor.submit(...)
+
+# OR
+
+loop.set_default_executor(ContextVarExecutor())  # for asyncio loop
 ```
 
 ## For developers
@@ -148,7 +173,7 @@ loop.set_default_executor(ContextVarExecutor())
 
 ### Install git precommit hook
 
-    make precommit_install
+    make precommit_hook
 
 ### Run linters, autoformat, tests etc.
 

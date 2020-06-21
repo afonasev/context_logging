@@ -1,17 +1,22 @@
 import time
 from collections import UserDict
-from contextlib import ContextDecorator
-from contextvars import ContextVar
-from typing import Any, Callable, ChainMap, Dict, List, Optional, Type, cast
+from contextvars import ContextVar, Token
+from typing import Any, ChainMap, Dict, Optional, Type, cast
+
+from deprecated import deprecated
 
 from .config import config
 from .logger import logger
-from .utils import context_name_with_code_path, seconds_to_time_string
+from .utils import (
+    SyncAsyncContextDecorator,
+    context_name_with_code_path,
+    seconds_to_time_string,
+)
 
-ROOT = 'root'
+ROOT_CONTEXT_NAME = 'root'
 
 
-class Context(ContextDecorator):
+class ContextFactory(SyncAsyncContextDecorator):
     def __init__(
         self,
         name: Optional[str] = None,
@@ -21,7 +26,7 @@ class Context(ContextDecorator):
         **kwargs: Any
     ) -> None:
         self.name = name or context_name_with_code_path()
-        self.info = kwargs
+        self._context_data = kwargs
 
         if log_execution_time is None:
             log_execution_time = config.LOG_EXECUTION_TIME_DEFAULT
@@ -31,32 +36,18 @@ class Context(ContextDecorator):
             fill_exception_context = config.FILL_EXEPTIONS_DEFAULT
         self._fill_exception_context = fill_exception_context
 
-        self.start_time: Optional[float] = None
-        self.finish_time: Optional[float] = None
-
+    @deprecated
     def start(self) -> None:
-        ctx_stack.get().append(self)
-        self.start_time = time.monotonic()
+        self.__enter__()
 
-    def finish(self, exc: Optional[Exception] = None) -> None:
-        self.finish_time = time.monotonic() - cast(float, self.start_time)
+    @deprecated
+    def finish(self) -> None:
+        self.__exit__(None, None, None)
 
-        if self._log_execution_time:
-            logger.info(
-                '%s: executed in %s',
-                self.name,
-                seconds_to_time_string(self.finish_time),
-            )
-
-        if exc and self._fill_exception_context and current_context:
-            if not getattr(exc, '__context_logging__', None):
-                exc.__context_logging__ = True  # type: ignore
-                exc.args += (dict(current_context),)
-
-        ctx_stack.get().remove(self)
-
-    def __enter__(self) -> None:
-        self.start()
+    def __enter__(self) -> 'ContextObject':
+        context = self.create_context()
+        context.start()
+        return context
 
     def __exit__(
         self,
@@ -64,33 +55,80 @@ class Context(ContextDecorator):
         exc_value: Optional[Exception],
         traceback: Any,
     ) -> None:
-        self.finish(exc_value)
+        context = _current_context.get()
+        context.finish(exc_value)
+
+    def create_context(self) -> 'ContextObject':
+        return ContextObject(
+            name=self.name,
+            log_execution_time=self._log_execution_time,
+            fill_exception_context=self._fill_exception_context,
+            context_data=self._context_data.copy(),
+        )
 
 
-ctx_stack: ContextVar[List[Context]] = ContextVar(
-    'ctx', default=[Context(name=ROOT)]
+class ContextObject(UserDict):  # type: ignore
+    def __init__(  # pylint:disable=super-init-not-called
+        self,
+        name: str,
+        log_execution_time: bool,
+        fill_exception_context: bool,
+        context_data: Dict[Any, Any],
+    ) -> None:
+        self.name = name
+
+        self._log_execution_time = log_execution_time
+        self._fill_exception_context = fill_exception_context
+        self._context_data = context_data
+
+        self._parent_context: Optional[ContextObject] = None
+        self._parent_context_token: Optional[Token[ContextObject]] = None
+        self._start_time: Optional[float] = None
+
+    @property
+    def data(self) -> ChainMap[Any, Any]:  # type: ignore
+        return ChainMap(self._context_data, self._parent_context or {})
+
+    def start(self) -> None:
+        self._parent_context = _current_context.get()
+        self._parent_context_token = _current_context.set(self)
+        self._start_time = time.monotonic()
+
+    def finish(self, exc: Optional[Exception] = None) -> None:
+        if self._log_execution_time:
+            finish_time = time.monotonic() - cast(float, self._start_time)
+
+            logger.info(
+                '%s: executed in %s',
+                self.name,
+                seconds_to_time_string(finish_time),
+            )
+
+        if exc and self._fill_exception_context and current_context:
+            if not getattr(exc, '__context_logging__', None):
+                exc.__context_logging__ = True  # type: ignore
+                exc.args += (dict(current_context),)
+
+        _current_context.reset(
+            cast(Token, self._parent_context_token)  # type: ignore
+        )
+
+
+root_context = ContextFactory(name=ROOT_CONTEXT_NAME).create_context()
+
+_current_context: ContextVar[ContextObject] = ContextVar(
+    'ctx', default=root_context
 )
 
 
-class ContextProxy(UserDict):  # type: ignore
-    def __init__(  # pylint:disable=super-init-not-called
-        self, get_info: Callable[[], Dict[str, Any]]
-    ) -> None:
-        self._get_info = get_info
+class CurrentContextProxy(UserDict):  # type: ignore
+    def __init__(self) -> None:  # pylint:disable=super-init-not-called
+        pass
 
     @property
-    def data(self) -> Dict[str, Any]:  # type: ignore
-        return self._get_info()
+    def data(self) -> ContextObject:  # type: ignore
+        return _current_context.get()
 
 
-def _root_context() -> Dict[str, Any]:
-    return ctx_stack.get()[0].info
-
-
-def _current_context() -> ChainMap[str, Any]:
-    _stack = ctx_stack.get()
-    return ChainMap(*(c.info for c in _stack[::-1]))
-
-
-current_context = ContextProxy(_current_context)  # type: ignore
-root_context = ContextProxy(_root_context)
+current_context = CurrentContextProxy()
+Context = ContextFactory  # for backward compatibility

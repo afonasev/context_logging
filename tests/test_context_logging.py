@@ -1,18 +1,32 @@
+import asyncio
 import logging
-import random
 import time
-from threading import Thread
-from typing import List
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import ANY
 
+import pytest
+
+from context_logging import ContextVarExecutor
 from context_logging.context import (
     Context,
-    ctx_stack,
+    ContextObject,
     current_context,
     root_context,
 )
 from context_logging.log_record import setup_log_record
 from context_logging.logger import logger
+
+
+def test_context_object_finish(caplog):
+    context = ContextObject(
+        name='name',
+        log_execution_time=True,
+        fill_exception_context=True,
+        context_data={},
+    )
+    context.start()
+    context.finish()
+    assert 'name: executed in' in caplog.records[-1].message
 
 
 def test_root_context():
@@ -63,13 +77,13 @@ def test_context_as_decorator():
 
 
 def test_context_with_start_finish():
-    ctx = Context(data='data')
+    context = Context(data='data')
     assert current_context == {}
 
-    ctx.start()
+    context.start()
     assert current_context == {'data': 'data'}
 
-    ctx.finish()
+    context.finish()
     assert current_context == {}
 
 
@@ -79,13 +93,13 @@ def test_default_name():
 
 def test_execution_time(mocker):
     mocker.spy(logger, 'info')
-    ctx = Context()
+    context = Context()
 
-    with ctx:
+    with context:
         pass
 
     logger.info.assert_called_once_with(  # type: ignore
-        '%s: executed in %s', ctx.name, ANY
+        '%s: executed in %s', context.name, ANY
     )
 
 
@@ -117,38 +131,71 @@ def test_log_record(caplog):
         assert caplog.records[-1].context == {'data': 1}
 
 
-@Context()
-def _func(n, errors):
-    try:
-        time.sleep(random.randint(0, 1))  # noqa:S311
-        assert current_context['data'] == 'inner'
+def sync_task():
+    assert current_context['data'] == 1
+    current_context['data'] = 2
 
-        current_context['data'] = n
+
+async def async_task():
+    sync_task()
+
+
+@pytest.mark.asyncio
+async def test_context_passing_to_asyncio_task_with_context_leaking():
+    with Context(data=1):
+        await asyncio.create_task(async_task())
+        assert current_context['data'] == 2
+
+
+@pytest.mark.asyncio
+async def test_context_passing_to_asyncio_task_with_separate_context():
+    with Context(data=1):
+        wrapped_task = Context()(async_task)
+        await asyncio.create_task(wrapped_task())  # type: ignore
+        assert current_context['data'] == 1
+
+
+def test_context_passing_to_thread_without_context_var_executor():
+    with Context(data=1):
+        with ThreadPoolExecutor() as executor:
+            with pytest.raises(KeyError):
+                executor.submit(sync_task).result()
+
+
+def test_context_passing_to_thread_with_context_leaking():
+    with Context(data=1):
+        with ContextVarExecutor() as executor:
+            executor.submit(sync_task).result()
+
+        assert current_context['data'] == 2
+
+
+def test_context_passing_to_thread_with_separate_context():
+    with Context(data=1):
+        with ContextVarExecutor() as executor:
+            wrapped_task = Context()(sync_task)
+            executor.submit(wrapped_task).result()
+
+        assert current_context['data'] == 1
+
+
+@Context()
+def not_safe_long_task(n):
+    time.sleep(0.1)
+    assert current_context['data'] == 'start'
+
+    current_context['data'] = n
+    assert current_context['data'] == n
+
+    for _ in range(3):
+        time.sleep(0.1)
         assert current_context['data'] == n
 
-        for _ in range(3):
-            time.sleep(random.randint(0, 1))  # noqa:S311
-            assert current_context['data'] == n
 
-    except Exception:
-        logging.exception('Error')
-        for ctx in ctx_stack.get():
-            logging.info('Thread %s, context %s', n, ctx.info)
-        errors.append(1)
+def test_multithreading_context_leaking():
+    with Context(data='start'):
+        with ContextVarExecutor() as executor:
+            for _ in executor.map(not_safe_long_task, range(5)):
+                pass
 
-
-def test_multithreading_context():
-    errors: List[int] = []
-
-    with Context(data='root'):
-        with Context(data='inner'):
-            threads = []
-            for i in range(1):
-                t = Thread(target=lambda i=i: _func(i, errors), daemon=True)
-                threads.append(t)
-                t.start()
-
-            for t in threads:
-                t.join()
-
-    assert not errors
+        assert current_context['data'] == 'start'
