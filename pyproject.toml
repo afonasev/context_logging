@@ -7,10 +7,12 @@ license = "MIT"
 readme = 'README.md'
 repository = "https://github.com/Afonasev/context_logging"
 homepage = "https://pypi.org/project/context_logging"
-keywords = ["logging", "context"]
+keywords = ["logging", "logger", "context"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+contextvars_executor = "^0.0.1"
+deprecated = "^1.2.10"
 pydantic = "^1"
 
 [tool.poetry.dev-dependencies]
@@ -21,10 +23,10 @@ flake8-awesome = "^1"
 mypy = "*"
 pylint = "^2"
 pytest = "^5"
+pytest-asyncio = "^0.12"
 pytest-cov = "^2"
 pytest-deadfixtures = "^2"
 pytest-mock = "^2"
-typed-ast = "^1"
 unify = "^0.5"
 
 [build-system]
