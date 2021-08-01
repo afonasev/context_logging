@@ -16,7 +16,7 @@ deprecated = "^1.2.10"
 pydantic = "^1"
 
 [tool.poetry.dev-dependencies]
-black = {version = "^19.10b0", allow-prereleases = true}
+black = {version = "^21.7b0", allow-prereleases = true}
 bumpversion = "^0.6"
 codecov = "^2.1.8"
 flake8-awesome = "^1"
