@@ -12,15 +12,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python 3.8.3
+    - name: Set up Python 3.11
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8.3
+        python-version: 3.11
 
     - name: Set up Poetry
       uses: dschep/install-poetry-action@v1.3
       with:
-        version: 1.0.9
+        version: 1.5.1
 
     - name: Build and publish to pypi
       run: |

@@ -140,14 +140,14 @@ async def async_task():
     sync_task()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_context_passing_to_asyncio_task_with_context_leaking():
     with Context(data=1):
         await asyncio.create_task(async_task())
         assert current_context['data'] == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_context_passing_to_asyncio_task_with_separate_context():
     with Context(data=1):
         wrapped_task = Context()(async_task)
