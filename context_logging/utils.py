@@ -7,7 +7,9 @@ from typing import Any, Callable
 
 
 class SyncAsyncContextDecorator(ContextDecorator):
-    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+    def __call__(  # type:ignore
+        self, func: Callable[..., Any]
+    ) -> Callable[..., Any]:
         if iscoroutinefunction(func):
 
             @wraps(func)

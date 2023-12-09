@@ -38,7 +38,7 @@ class ContextFactory(SyncAsyncContextDecorator):
 
     @deprecated
     def start(self) -> None:
-        self.__enter__()
+        self.__enter__()  # pylint:disable=unnecessary-dunder-call
 
     @deprecated
     def finish(self) -> None:
